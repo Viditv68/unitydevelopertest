@@ -183,11 +183,4 @@ public class PlayerMovement : MonoBehaviour
             Destroy(other.gameObject);
         }
     }
-
-
-    private void OnTriggerEnter(Collision collision)
-    {
-
-       
-    }
 }
