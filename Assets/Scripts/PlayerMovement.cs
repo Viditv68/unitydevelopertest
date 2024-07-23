@@ -8,7 +8,8 @@ public class PlayerMovement : MonoBehaviour
 {
     private PlayerControls controls;
 
-    
+    [SerializeField] private GameManager manager;
+    [SerializeField] private Transform holoTransform;
     [SerializeField] private Animator anim;
     [SerializeField] private CharacterController characterController;
     [SerializeField] private Animator animator;
@@ -43,10 +44,18 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        if (manager.isGamePaused)
+            return;
 
         ApplyMovement();
         ApplyGravity();
         SetHologramDirection();
+
+        if (Input.GetKeyDown(KeyCode.Return))
+        {
+            if(holoTransform.gameObject.activeInHierarchy)
+                transform.rotation = holoTransform.rotation;
+        }
 
     }
 
@@ -72,15 +81,29 @@ public class PlayerMovement : MonoBehaviour
     private void FlipDirection(Vector3 newDirection)
     {
         Quaternion rotationDifference = Quaternion.FromToRotation(newDirection, Vector3.up);
-        transform.rotation = rotationDifference * transform.rotation;
+        holoTransform.rotation = rotationDifference * transform.rotation;
+        holoTransform.gameObject.SetActive(true);
+
+        StartCoroutine(DisableHoloGameObject());
         //transform.Rotate((rotationDifference * transform.rotation).ToEulerAngles(), 1f, Space.World);
         //movementDirection = new Vector3(moveInput.x, 0, moveInput.y);
     }
 
+
+    IEnumerator DisableHoloGameObject()
+    {
+        yield return new WaitForSeconds(3f);
+        holoTransform.gameObject.SetActive(false);
+    }
     private void GetMovementDirection()
     {
-        movementDirection = new Vector3(moveInput.x, 0, moveInput.y);
-        movementDirection.y = verticalVelocity;
+
+        if (transform.localRotation.eulerAngles.z == 0f)
+        {
+            movementDirection = new Vector3(moveInput.x, 0, moveInput.y);
+            movementDirection.y = verticalVelocity;
+        }
+           
         if (transform.localRotation.eulerAngles.z == 90f)
         {
             movementDirection = new Vector3(0, moveInput.x, moveInput.y);
@@ -110,7 +133,6 @@ public class PlayerMovement : MonoBehaviour
             movementDirection = new Vector3(-moveInput.x, 0, moveInput.y);
         }
 
-
     }
 
 
@@ -121,7 +143,7 @@ public class PlayerMovement : MonoBehaviour
         //movementDirection = new Vector3(moveInput.x, 0, moveInput.y);
         Debug.Log(moveInput);
 
-        if (movementDirection.magnitude > 0)
+        if (moveInput.magnitude > 0)
         {
             characterController.Move(movementDirection * Time.deltaTime * speed);
             anim.SetBool("Run", true);
@@ -151,5 +173,21 @@ public class PlayerMovement : MonoBehaviour
         controls.Character.Movement.canceled += context => moveInput = Vector2.zero;
 
 
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.tag == "Cube")
+        {
+            manager.PlayerCollectCubes();
+            Destroy(other.gameObject);
+        }
+    }
+
+
+    private void OnTriggerEnter(Collision collision)
+    {
+
+       
     }
 }
