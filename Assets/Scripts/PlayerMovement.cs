@@ -8,6 +8,7 @@ public class PlayerMovement : MonoBehaviour
 {
     private PlayerControls controls;
 
+    
     [SerializeField] private Animator anim;
     [SerializeField] private CharacterController characterController;
     [SerializeField] private Animator animator;
@@ -17,10 +18,6 @@ public class PlayerMovement : MonoBehaviour
     private float verticalVelocity;
     public Vector2 moveInput { get; private set; }
 
-    bool isGravityOnLeft = false;
-    bool isGravityOnRight = false;
-    bool isGravityOnDown = false;
-    bool isGravityOnUp = false;
 
     private void Awake()
     {
@@ -41,37 +38,87 @@ public class PlayerMovement : MonoBehaviour
     private void Start()
     {
         AssignInputEvents();
+        movementDirection = new Vector3(moveInput.x, 0, moveInput.y);
     }
 
     private void Update()
     {
 
         ApplyMovement();
-        SetGravityDirection();
+        ApplyGravity();
+        SetHologramDirection();
 
     }
 
-    private void SetGravityDirection()
+    private void SetHologramDirection()
     {
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
-            isGravityOnLeft = true;
-            isGravityOnRight = false;
+            FlipDirection(-Vector3.right);
         }
 
-        if (Input.GetKeyDown(KeyCode.RightArrow))
+        else if (Input.GetKeyDown(KeyCode.RightArrow))
         {
-            isGravityOnLeft = false;
-            isGravityOnRight = true;
-
-            transform.eulerAngles = new Vector3(0f, 0f, 90f);
+            FlipDirection(Vector3.right);
         }
-        ApplyGravity();
+        else if(Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            FlipDirection(Vector3.up);
+        }
+
+
     }
+
+    private void FlipDirection(Vector3 newDirection)
+    {
+        Quaternion rotationDifference = Quaternion.FromToRotation(newDirection, Vector3.up);
+        transform.rotation = rotationDifference * transform.rotation;
+        //transform.Rotate((rotationDifference * transform.rotation).ToEulerAngles(), 1f, Space.World);
+        //movementDirection = new Vector3(moveInput.x, 0, moveInput.y);
+    }
+
+    private void GetMovementDirection()
+    {
+        movementDirection = new Vector3(moveInput.x, 0, moveInput.y);
+        movementDirection.y = verticalVelocity;
+        if (transform.localRotation.eulerAngles.z == 90f)
+        {
+            movementDirection = new Vector3(0, moveInput.x, moveInput.y);
+            movementDirection.x = -verticalVelocity;
+        }
+        else if(transform.localRotation.eulerAngles.z == 180f)
+        {
+            movementDirection = new Vector3(-moveInput.x, 0, moveInput.y);
+            movementDirection.y = verticalVelocity;
+        }
+        else if (transform.localRotation.eulerAngles.z == 270f)
+        {
+            movementDirection = new Vector3(0, -moveInput.x, moveInput.y);
+            movementDirection.x = verticalVelocity;
+        }
+
+        if (transform.localRotation.eulerAngles.x == 90f)
+        {
+            movementDirection = new Vector3(moveInput.x,moveInput.y, 0);
+        }
+        else if (transform.localRotation.eulerAngles.x == 180f)
+        {
+            movementDirection = new Vector3(-moveInput.x, 0, moveInput.y);
+        }
+        else if (transform.localRotation.eulerAngles.x == 270f)
+        {
+            movementDirection = new Vector3(-moveInput.x, 0, moveInput.y);
+        }
+
+
+    }
+
+
 
     private void ApplyMovement()
     {
-        movementDirection = new Vector3(moveInput.x, 0, moveInput.y);
+        GetMovementDirection();
+        //movementDirection = new Vector3(moveInput.x, 0, moveInput.y);
         Debug.Log(moveInput);
 
         if (movementDirection.magnitude > 0)
@@ -85,17 +132,13 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+
     private void ApplyGravity()
     {
         if (!characterController.isGrounded)
         {
             verticalVelocity -= 9.81f * Time.deltaTime;
-            if(isGravityOnLeft)
-                movementDirection.x = verticalVelocity;
-            else if(isGravityOnRight)
-                movementDirection.x = -verticalVelocity;
-            else
-                movementDirection.y = verticalVelocity;
+
         }
         else
             verticalVelocity = -0.5f;
